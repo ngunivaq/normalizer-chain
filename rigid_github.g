@@ -20,6 +20,7 @@ end;
 
 
 IsRigidSet := function (lst);
+	# Check if a list of integers has strictly decreasing entries
 	if (not ForAll(lst, IsInt)) then
 		return(false);
 	fi;
@@ -101,6 +102,7 @@ end;
 
 
 NormalClosureChainRigid := function (dim)
+	# Return the fastest subnormal chain in Sigma_n Starting from a regular abelian subgroup
 	local t, c1, c2, c3, newrigid, oldrigid, sizes;
 	t:=[]; 
 	for i in [1..dim] do
@@ -117,10 +119,107 @@ NormalClosureChainRigid := function (dim)
 	Add(sizes, Length(oldrigid));
 	return (sizes);
 end;
-	
-		
-	
 
+NormalizerRigid := function (set1, set2)
+	# Returns the set of generators of the normalizer of <set1> in <set2> 
+	# where set1 and set 2 are saturated set of rigid sets
+	local out, x, y, extset2;
+	out:=[];
+	extset2 := Union(set2, [[]]);
+	for x in set1 do
+		if ForAll (set2, y->(CommutatorOfTwoRigidSets(x,y) in extset2 ) ) then
+			Add (out, x);
+		fi;
+	od;
+	return Set(out);
+end;
+		
+NormalizerRigidDifference := function (set1, set2)
+	# Returns the difference with set1 of set of generators of the normalizer of <set1> in <set2> 
+	# where set1 and set 2 are saturated set of rigid sets 
+	local out, x, y, extset2, diff;
+	out:=[];
+	extset2 := Union(set2, [[]]);
+	diff:=Difference(set1,set2);
+	for x in diff do
+		if ForAll (set2, y->(CommutatorOfTwoRigidSets(x,y) in extset2 ) ) then
+			Add (out, x);
+		fi;
+	od;
+	return Set(out);
+end;
+
+SaturationOfSetOfRigidCommutators := function (set)
+	Return the smallest saturated set of rigid sets containing set
+	## return the smallest saturated set of rigid commutators containing the set "set" of rigid commutators
+	local inset, outset;
+	inset := Set(ShallowCopy(set));
+	outset:=Union( inset, Set( ListX (inset, inset, CommutatorOfTwoRigidSets) ));
+	while outset <> inset do
+		inset := outset;
+		outset:=Union( inset, Set( ListX (inset, inset, CommutatorOfTwoRigidSets) ));
+	od;
+	return(outset);
+end;
+
+RigidDecomposition := function(g,dim,args...)
+	# decompose a permutation as a product or rigid commutators
+	local out,start,g1,g2,lp1,lp2,tmplst,x;
+	if g=() then
+		return [[]];
+	fi;
+	if Length(args) > 0 then
+		start := args[1];
+	else
+		start:=1;
+	fi;
+	out:=[];
+	if (1^g > 2^(dim-1)) then
+		g:=Sigma_gens(dim)[1]*g;
+		out:=[[start]];
+#		Print(start," ",g,"\n");
+	fi;
+	start := start + 1;
+	lp1:=ListPerm(g,2^dim);
+	lp2:=ListPerm(g^Sigma_gens(dim)[1],2^dim);
+	g1:=PermList(lp1{[1..2^(dim-1)]});
+	g2:=PermList(lp2{[1..2^(dim-1)]});
+	g1:=g1*g2;
+	if g1 <> () then Append(out, RigidDecomposition(g1,dim-1,start)); fi;
+	if g2 <> () then
+		tmplst:=RigidDecomposition(g2,dim-1,start);
+		for x in tmplst do
+			Add(x,start-1);
+		od;
+		Append(out, tmplst ); 
+	fi;
+	return out;
+end;
+
+RigidCollection := function(rigidlist)
+	# return an ordered list of rigid commutators having the same product as the 
+	# elements in the list of rigid commutators rigidlist
+	local flag, tmplst, tmprigidlst, tmpelm, pos,com;
+	tmprigidlst:=DifferenceLists(rigidlist, [[]]);
+	flag:=true;
+	while flag do
+		tmplst:= [1..(Length(tmprigidlst)-1)];
+		pos:=PositionProperty(tmplst, x->(tmprigidlst[x+1] <= tmprigidlst[x]));
+		if pos<>fail and tmprigidlst[pos+1]<>tmprigidlst[pos] then
+			com:=CommutatorOfTwoRigidSets(tmprigidlst[pos],tmprigidlst[pos+1]);
+			tmpelm := tmprigidlst[pos];
+			tmprigidlst[pos] :=tmprigidlst[pos+1];
+			tmprigidlst[pos+1]:= tmpelm;
+			Add(tmprigidlst,com, pos+2);
+		elif pos<>fail and tmprigidlst[pos+1]=tmprigidlst[pos] then
+			Remove(tmprigidlst,pos+1);
+			Remove(tmprigidlst,pos);
+		else
+			flag := false;
+		fi;
+	od;
+	return tmprigidlst;
+end;
 	
 
 
