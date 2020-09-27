@@ -150,8 +150,7 @@ NormalizerRigidDifference := function (set1, set2)
 end;
 
 SaturationOfSetOfRigidCommutators := function (set)
-	Return the smallest saturated set of rigid sets containing set
-	## return the smallest saturated set of rigid commutators containing the set "set" of rigid commutators
+	## returns the smallest saturated set of rigid commutators containing the set "set" of rigid commutators
 	local inset, outset;
 	inset := Set(ShallowCopy(set));
 	outset:=Union( inset, Set( ListX (inset, inset, CommutatorOfTwoRigidSets) ));
@@ -223,8 +222,8 @@ end;
 	
 
 
-dim:=10;
-# we are working in Sym(2^dim)
+dim:=8;
+# we are working in Sym(2^dim) change dim accordingly to your choice
 
 rcombs:=ListX(Combinations([1..dim]), Reversed);;
 # all rigid subsets of [1..dim]
