@@ -103,7 +103,7 @@ end;
 
 NormalClosureChainRigid := function (dim)
 	# Return the fastest subnormal chain in Sigma_n Starting from a regular abelian subgroup
-	local t, c1, c2, c3, newrigid, oldrigid, sizes;
+	local t, c1, c2, c3, newrigid, oldrigid, sizes, i;
 	t:=[]; 
 	for i in [1..dim] do
 		Add(t , Reversed([1..i]));
@@ -121,7 +121,7 @@ NormalClosureChainRigid := function (dim)
 end;
 
 NormalizerRigid := function (set1, set2)
-	# Returns the set of generators of the normalizer of <set1> in <set2> 
+	# Returns the set of rigid generators of the normalizer of <set2> in <set1> 
 	# where set1 and set 2 are saturated set of rigid sets
 	local out, x, y, extset2;
 	out:=[];
@@ -133,9 +133,26 @@ NormalizerRigid := function (set1, set2)
 	od;
 	return Set(out);
 end;
+
+NormalizerRigidNonTrivial := function (set1, set2)
+	# Returns the set of nontrivial rigid generators of the normalizer of <set2> in <set1> 
+	# where set1 and set 2 are saturated set of rigid sets
+	local out, x, y, extset2;
+	out:=[];
+	extset2 := Union(set2, [[]]);
+	for x in set1 do
+		if x <> [] then 
+			if ForAll (set2, y->(CommutatorOfTwoRigidSets(x,y) in extset2 ) ) then
+				Add (out, x);
+			fi;
+		fi;
+	od;
+	return Set(out);
+end;
+
 		
 NormalizerRigidDifference := function (set1, set2)
-	# Returns the difference with set1 of set of generators of the normalizer of <set1> in <set2> 
+	# Returns the difference with set1 of set of generators of the normalizer of <set2> in <set1> 
 	# where set1 and set 2 are saturated set of rigid sets 
 	local out, x, y, extset2, diff;
 	out:=[];
@@ -222,8 +239,12 @@ end;
 	
 
 
-dim:=8;
+dim:=11;
 # we are working in Sym(2^dim) change dim accordingly to your choice
+
+##outfile:=Concatenation("rigid_out_", String(dim), ".txt");
+str := "";; outfile := OutputTextString(str,true);;
+
 
 rcombs:=ListX(Combinations([1..dim]), Reversed);;
 # all rigid subsets of [1..dim]
@@ -248,7 +269,7 @@ rcombs_part:=Difference(rcombs_part,[[]]);;
 ngens:=[Union([[[]],Set(t)])];;
 
 i:=-1;
-PrintTo("rigid_out.txt","Normalizer chain and subnormal chain of T in the Sylow 2-Subgroup of Sym(2^",dim, ")","\n\n");
+PrintTo(outfile,"Normalizer chain and subnormal chain of T in the Sylow 2-Subgroup of Sym(2^",dim, ")","\n\n");
 while rcombs_part <> [] do
 	i:=i+1;
 	lst := Union (ngens);;
@@ -258,9 +279,9 @@ while rcombs_part <> [] do
 			Add(new,x);;
 		fi;
 	od;
-	AppendTo("rigid_out.txt" ,"The size of the ",i, "-th term of the normalizer chain is 2^", 2^dim-Size(rcombs_part)-1+Size(new),"\n");
-	AppendTo("rigid_out.txt" ,"This term is obtained by adding the following rigid commutators to the generators of the previous one:\n");
-	AppendTo("rigid_out.txt" ,new,"\n\n");
+	AppendTo(outfile ,"The size of the ",i, "-th term of the normalizer chain is 2^", 2^dim-Size(rcombs_part)-1+Size(new),"\n");
+	AppendTo(outfile ,"This term is obtained by adding the following rigid commutators to the generators of the previous one:\n");
+	AppendTo(outfile ,new,"\n\n");
 	Add(ngens,new);;
 	rcombs_part:=Difference(rcombs_part,new);;
 od;
@@ -271,7 +292,7 @@ i:=-2;
 diff:=0;
 old:=dim;
 
-AppendTo("rigid_out.txt" ,"\n","The following table contains respectively in each column:", "\n\t" ,"1) The number i of the normalizer N_i,","\n\t",  "2) The list of the dimensions of the intersections of N_i with S_dim, ... , S_1", "\n\t", "3) log_2(Size(N_i))", "\n\t", "4) log_2(Size(N_i)/Size(N_(i-1)))", "\n\n" );
+AppendTo(outfile ,"\n","The following table contains respectively in each column:", "\n\t" ,"1) The number i of the normalizer N_i,","\n\t",  "2) The list of the dimensions of the intersections of N_i with S_",dim,", ... , S_1", "\n\t", "3) log_2(Size(N_i))", "\n\t", "4) log_2(Size(N_i)/Size(N_(i-1)))", "\n\n" );
 
 for piece in ngens do
 	i:=i+1;
@@ -282,15 +303,28 @@ for piece in ngens do
 		old:=sum;
 	fi;
 	sum:=Sum(sizes);;
-	if (i >=0) then AppendTo("rigid_out.txt" ,i,"-th term \t" ,sizes," \t-\t ", sum ," \t-\t ", sum - old ,"\n"); fi;
+	if (i >=0) then AppendTo(outfile ,i,"-th term \t" ,sizes," \t-\t ", sum ," \t-\t ", sum - old ,"\n"); fi;
 od;
 
-lst:=NormalClosureChainRigid(dim);
-AppendTo("rigid_out.txt" ,"\n", "The sunbnormality defect of t is ",Length(lst)," and subgroup of the chain have orders");
-for i in lst do
-	AppendTo("rigid_out.txt" ," 2^", i);
-od;
-AppendTo("rigid_out.txt" ,"\n");
+Print(str);
+
+# lst:=NormalClosureChainRigid(dim);
+# AppendTo(outfile ,"\n", "The sunbnormality defect of t is ",Length(lst)," and subgroup of the chain have orders");
+# for i in lst do
+	# AppendTo(outfile ," 2^", i);
+# od;
+# AppendTo(outfile ,"\n");
+
+# tgroup:=Group(List(t,x->rigid_lnc(x,dim)));
+# u_rigid_gens:=NormalizerRigidNonTrivial(rcombs,t);
+# ugroup:=Group(List(u_rigid_gens,x->rigid_lnc(x,dim)));
+# n1_rigid_gens:=NormalizerRigidNonTrivial(rcombs,u_rigid_gens);
+# n1group:= Group(List(n1_rigid_gens,x->rigid_lnc(x,dim)));
 
 
-		
+# sym:=SymmetricGroup(2^dim);
+# n1:=Normalizer(sym,ugroup);
+# time;
+
+# n1=n1group;
+
